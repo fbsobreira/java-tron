@@ -32,6 +32,14 @@ public class VotesCapsule implements ProtoCapsule<Votes> {
         .build();
   }
 
+  public VotesCapsule(ByteString address, List<Vote> oldVotes, List<Vote> newVotes) {
+    this.votes = Votes.newBuilder()
+        .setAddress(address)
+        .addAllOldVotes(oldVotes)
+        .addAllNewVotes(newVotes)
+        .build();
+  }
+
   public ByteString getAddress() {
     return this.votes.getAddress();
   }

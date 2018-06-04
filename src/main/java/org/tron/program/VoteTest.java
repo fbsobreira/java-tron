@@ -1,4 +1,4 @@
-package org.tron.core.db;
+package org.tron.program;
 
 import com.google.common.collect.Maps;
 import com.google.protobuf.ByteString;
@@ -6,11 +6,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import lombok.extern.slf4j.Slf4j;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.tron.common.utils.ByteArray;
 import org.tron.common.utils.FileUtil;
@@ -20,10 +15,11 @@ import org.tron.core.capsule.VotesCapsule;
 import org.tron.core.capsule.WitnessCapsule;
 import org.tron.core.config.DefaultConfig;
 import org.tron.core.config.args.Args;
+import org.tron.core.db.VotesStore;
+import org.tron.core.db.WitnessStore;
 import org.tron.protos.Protocol.Vote;
 
-@Slf4j
-public class VotesStoreTest {
+public class VoteTest {
 
   private static final String dbPath = "output-votesStore-test";
   private static AnnotationConfigApplicationContext context;
@@ -35,41 +31,62 @@ public class VotesStoreTest {
     context = new AnnotationConfigApplicationContext(DefaultConfig.class);
   }
 
-  @Before
   public void initDb() {
     this.votesStore = context.getBean(VotesStore.class);
     this.witnessStore = context.getBean(WitnessStore.class);
   }
 
-  @AfterClass
   public static void destroy() {
     Args.clearParam();
     FileUtil.deleteDir(new File(dbPath));
     context.destroy();
   }
 
-  @Test
-  public void putAndGetVotes() {
-    List<Vote> oldVotes = new ArrayList<Vote>();
-
-    VotesCapsule votesCapsule = new VotesCapsule(ByteString.copyFromUtf8("100000000x"), oldVotes);
-    this.votesStore.put(votesCapsule.createDbKey(), votesCapsule);
-
-    Assert.assertEquals(votesStore.getAllVotes().size(), 1);
-    Assert.assertTrue(votesStore.has(votesCapsule.createDbKey()));
-    VotesCapsule votesSource = this.votesStore
-        .get(ByteString.copyFromUtf8("100000000x").toByteArray());
-    Assert.assertEquals(votesCapsule.getAddress(), votesSource.getAddress());
-    Assert.assertEquals(ByteString.copyFromUtf8("100000000x"), votesSource.getAddress());
-
-//    votesCapsule = new VotesCapsule(ByteString.copyFromUtf8(""), oldVotes);
-//    this.votesStore.put(votesCapsule.createDbKey(), votesCapsule);
-//    votesSource = this.votesStore.get(ByteString.copyFromUtf8("").toByteArray());
-//    Assert.assertEquals(votesStore.getAllVotes().size(), 2);
-//    Assert.assertEquals(votesCapsule.getAddress(), votesSource.getAddress());
-//    Assert.assertEquals(null, votesSource.getAddress());
+  public static void main(String[] args) {
+    System.out.println("start");
+    VoteTest test = new VoteTest();
+    test.initDb();
+    test.calculateVoteTest(Integer.parseInt(args[0]), Integer.parseInt(args[1]),
+        Integer.parseInt(args[2]), Integer.parseInt(args[3]));
+    destroy();
+    System.out.println("end");
   }
 
+  public void calculateVoteTest(int witnessCount, int voteCount, int tryCount, int voteNum) {
+
+    votesStore.reset();
+
+    for (int i = 1; i < witnessCount; i++) {
+      WitnessCapsule witnessCapsule = createWitness(i);
+      witnessStore.put(witnessCapsule.createDbKey(), witnessCapsule);
+    }
+
+    for (int i = 1; i < voteCount; i++) {
+      VotesCapsule votesCapsule = createVote(witnessCount, i, voteNum);
+      votesStore.put(votesCapsule.createDbKey(), votesCapsule);
+      if (i % 1000 == 0) {
+        System.out.println("create VotesCapsule i : " + i);
+      }
+    }
+
+    long time = 0;
+    for (int i = 0; i < tryCount; i++) {
+      long startTime1 = System.currentTimeMillis();
+      votesStore.getAllVotes();
+      time += (System.currentTimeMillis() - startTime1);
+    }
+    System.out.println("getAllVotes time: " + time / tryCount);
+
+    time = 0;
+    for (int i = 0; i < tryCount; i++) {
+      long startTime1 = System.currentTimeMillis();
+      countVote(votesStore);
+      time += (System.currentTimeMillis() - startTime1);
+    }
+    System.out.println("countVote time: " + time / tryCount);
+
+
+  }
 
   private String createAddress(Integer i) {
     // 1 ~ 999999
@@ -100,13 +117,13 @@ public class VotesStoreTest {
 
 
   //30 oldVote,30 newVote
-  private VotesCapsule createVote(Integer in) {
+  private VotesCapsule createVote(int witnessCount, Integer in, int voteNum) {
 
     List<Vote> oldVotes = new ArrayList<Vote>();
     List<Vote> newVotes = new ArrayList<Vote>();
 
-    for (int i = 1; i < 30; i++) {
-      int x = (int) (Math.random() * 200);
+    for (int i = 1; i < voteNum; i++) {
+      int x = (int) (Math.random() * witnessCount);
       String OWNER_ADDRESS_FIRST = createWitnessAddress(x);
       Vote vote = Vote.newBuilder()
           .setVoteAddress(ByteString.copyFrom(ByteArray.fromHexString(OWNER_ADDRESS_FIRST)))
@@ -114,8 +131,8 @@ public class VotesStoreTest {
       oldVotes.add(vote);
     }
 
-    for (int i = 1; i < 30; i++) {
-      int x = (int) (Math.random() * 200);
+    for (int i = 1; i < voteNum; i++) {
+      int x = (int) (Math.random() * witnessCount);
       String OWNER_ADDRESS_FIRST = createWitnessAddress(x);
       Vote vote = Vote.newBuilder()
           .setVoteAddress(ByteString.copyFrom(ByteArray.fromHexString(OWNER_ADDRESS_FIRST)))
@@ -165,51 +182,6 @@ public class VotesStoreTest {
 
     });
     return countWitness;
-  }
-
-  @Test
-  public void calculateVoteTest() {
-
-    //200个witness，100W个账户投票，
-
-    //1、创建200个witness
-    //2、创建100W个账户投票
-    //start
-    //3、统计
-    //end
-
-    votesStore.reset();
-
-    for (int i = 1; i < 200; i++) {
-      WitnessCapsule witnessCapsule = createWitness(i);
-      witnessStore.put(witnessCapsule.createDbKey(), witnessCapsule);
-    }
-
-    for (int i = 1; i < 1000000; i++) {
-      VotesCapsule votesCapsule = createVote(i);
-      votesStore.put(votesCapsule.createDbKey(), votesCapsule);
-      if (i % 1000 == 0) {
-        System.out.println("VotesCapsule i : " + i);
-      }
-    }
-
-    long time = 0;
-    for (int i = 0; i < 3; i++) {
-      long startTime1 = System.currentTimeMillis();
-      votesStore.getAllVotes();
-      time += (System.currentTimeMillis() - startTime1);
-    }
-    System.out.println("getAllVotes time: " + time / 3);
-
-    time = 0;
-    for (int i = 0; i < 3; i++) {
-      long startTime1 = System.currentTimeMillis();
-      countVote(votesStore);
-      time += (System.currentTimeMillis() - startTime1);
-    }
-    System.out.println("countVote time: " + time / 3);
-
-
   }
 
 
