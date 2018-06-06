@@ -150,7 +150,7 @@ public class VoteTest {
 
   private Map<ByteString, Long> countVote(VotesStore votesStore) {
     final Map<ByteString, Long> countWitness = Maps.newHashMap();
-    final List<VotesCapsule> votesList = votesStore.getAllVotes();
+//    final List<VotesCapsule> votesList = votesStore.getAllVotes();
     final List<Integer> list = new ArrayList();
     list.add(0);
 
