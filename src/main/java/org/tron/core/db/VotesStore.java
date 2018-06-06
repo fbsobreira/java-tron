@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.tron.core.capsule.VotesCapsule;
@@ -49,4 +48,9 @@ public class VotesStore extends TronStoreWithRevoking<VotesCapsule> {
         .map(bytes -> new VotesCapsule(bytes))
         .collect(Collectors.toList());
   }
+
+  public org.tron.core.db.common.iterator.DBIterator getIterator() {
+    return dbSource.iterator();
+  }
+
 }

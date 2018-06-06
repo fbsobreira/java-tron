@@ -64,18 +64,18 @@ public class VoteTest {
     for (int i = 1; i < voteCount; i++) {
       VotesCapsule votesCapsule = createVote(witnessCount, i, voteNum);
       votesStore.put(votesCapsule.createDbKey(), votesCapsule);
-      if (i % 1000 == 0) {
+      if (i % 10000 == 0) {
         System.out.println("create VotesCapsule i : " + i);
       }
     }
-
+//
     long time = 0;
-    for (int i = 0; i < tryCount; i++) {
-      long startTime1 = System.currentTimeMillis();
-      votesStore.getAllVotes();
-      time += (System.currentTimeMillis() - startTime1);
-    }
-    System.out.println("getAllVotes time: " + time / tryCount);
+////    for (int i = 0; i < tryCount; i++) {
+////      long startTime1 = System.currentTimeMillis();
+////      votesStore.getAllVotes();
+////      time += (System.currentTimeMillis() - startTime1);
+////    }
+////    System.out.println("getAllVotes time: " + time / tryCount);
 
     time = 0;
     for (int i = 0; i < tryCount; i++) {
@@ -85,6 +85,7 @@ public class VoteTest {
     }
     System.out.println("countVote time: " + time / tryCount);
 
+    System.exit(0);
 
   }
 
@@ -153,7 +154,10 @@ public class VoteTest {
     final List<Integer> list = new ArrayList();
     list.add(0);
 
-    votesList.forEach(votes -> {
+    org.tron.core.db.common.iterator.DBIterator dbIterator = votesStore.getIterator();
+    while (dbIterator.hasNext()) {
+      VotesCapsule votes = new VotesCapsule(dbIterator.next().getValue());
+
       votes.getOldVotes().forEach(vote -> {
         //TODO validate witness //active_witness
         ByteString voteAddress = vote.getVoteAddress();
@@ -176,11 +180,40 @@ public class VoteTest {
       });
 
       list.set(0, list.get(0) + 1);
-      if (list.get(0) % 1000 == 0) {
+      if (list.get(0) % 10000 == 0) {
         System.out.println("countVote i : " + list.get(0));
       }
 
-    });
+    }
+
+//    votesList.forEach(votes -> {
+//      votes.getOldVotes().forEach(vote -> {
+//        //TODO validate witness //active_witness
+//        ByteString voteAddress = vote.getVoteAddress();
+//        long voteCount = vote.getVoteCount();
+//        if (countWitness.containsKey(voteAddress)) {
+//          countWitness.put(voteAddress, countWitness.get(voteAddress) - voteCount);
+//        } else {
+//          countWitness.put(voteAddress, -voteCount);
+//        }
+//      });
+//      votes.getNewVotes().forEach(vote -> {
+//        //TODO validate witness //active_witness
+//        ByteString voteAddress = vote.getVoteAddress();
+//        long voteCount = vote.getVoteCount();
+//        if (countWitness.containsKey(voteAddress)) {
+//          countWitness.put(voteAddress, countWitness.get(voteAddress) + voteCount);
+//        } else {
+//          countWitness.put(voteAddress, voteCount);
+//        }
+//      });
+//
+//      list.set(0, list.get(0) + 1);
+//      if (list.get(0) % 10000 == 0) {
+//        System.out.println("countVote i : " + list.get(0));
+//      }
+//
+//    });
     return countWitness;
   }
 
