@@ -1140,6 +1140,7 @@ public class Manager {
     witnessController.updateWitness();
     long endTime = System.currentTimeMillis();
     System.out.println("xxd process maintenance time: " + (endTime - startTime));
+    logger.info("xxd process maintenance time: " + (endTime - startTime));
     this.dynamicPropertiesStore.updateNextMaintenanceTime(block.getTimeStamp());
   }
 
