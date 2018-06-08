@@ -1136,7 +1136,10 @@ public class Manager {
    * Perform maintenance.
    */
   private void processMaintenance(BlockCapsule block) {
+    long startTime = System.currentTimeMillis();
     witnessController.updateWitness();
+    long endTime = System.currentTimeMillis();
+    System.out.println("xxd process maintenance time: " + (endTime - startTime));
     this.dynamicPropertiesStore.updateNextMaintenanceTime(block.getTimeStamp());
   }
 
