@@ -333,34 +333,35 @@ public class TransactionCapsule implements ProtoCapsule<Transaction> {
    * validate signature
    */
   public boolean validateSignature() throws ValidateSignatureException {
-    if (isVerified == true) {
-      return true;
-    }
-
-    if (this.getInstance().getSignatureCount() !=
-        this.getInstance().getRawData().getContractCount()) {
-      throw new ValidateSignatureException("miss sig or contract");
-    }
-
-    List<Transaction.Contract> listContract = this.transaction.getRawData().getContractList();
-    for (int i = 0; i < this.transaction.getSignatureCount(); ++i) {
-      try {
-        Transaction.Contract contract = listContract.get(i);
-        byte[] owner = getOwner(contract);
-        byte[] address = ECKey.signatureToAddress(getRawHash().getBytes(),
-            getBase64FromByteString(this.transaction.getSignature(i)));
-        if (!Arrays.equals(owner, address)) {
-          isVerified = false;
-          throw new ValidateSignatureException("sig error");
-        }
-      } catch (SignatureException e) {
-        isVerified = false;
-        throw new ValidateSignatureException(e.getMessage());
-      }
-    }
-
-    isVerified = true;
     return true;
+//    if (isVerified == true) {
+//      return true;
+//    }
+//
+//    if (this.getInstance().getSignatureCount() !=
+//        this.getInstance().getRawData().getContractCount()) {
+//      throw new ValidateSignatureException("miss sig or contract");
+//    }
+//
+//    List<Transaction.Contract> listContract = this.transaction.getRawData().getContractList();
+//    for (int i = 0; i < this.transaction.getSignatureCount(); ++i) {
+//      try {
+//        Transaction.Contract contract = listContract.get(i);
+//        byte[] owner = getOwner(contract);
+//        byte[] address = ECKey.signatureToAddress(getRawHash().getBytes(),
+//            getBase64FromByteString(this.transaction.getSignature(i)));
+//        if (!Arrays.equals(owner, address)) {
+//          isVerified = false;
+//          throw new ValidateSignatureException("sig error");
+//        }
+//      } catch (SignatureException e) {
+//        isVerified = false;
+//        throw new ValidateSignatureException(e.getMessage());
+//      }
+//    }
+//
+//    isVerified = true;
+//    return true;
   }
 
   public Sha256Hash getTransactionId() {
