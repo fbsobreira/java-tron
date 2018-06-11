@@ -222,18 +222,18 @@ public class Wallet {
       TransactionCapsule trx = new TransactionCapsule(signaturedTransaction);
       Message message = new TransactionMessage(signaturedTransaction);
 
-      if (dbManager.isTooManyPending()) {
-        logger.debug(
-            "Manager is busy, pending transaction count:{}, discard the new coming transaction",
-            (dbManager.getPendingTransactions().size() + PendingManager.getTmpTransactions()
-                .size()));
-        return builder.setResult(false).setCode(response_code.SERVER_BUSY).build();
-      }
-
-      if (dbManager.isGeneratingBlock()) {
-        logger.debug("Manager is generating block, discard the new coming transaction");
-        return builder.setResult(false).setCode(response_code.SERVER_BUSY).build();
-      }
+//      if (dbManager.isTooManyPending()) {
+//        logger.debug(
+//            "Manager is busy, pending transaction count:{}, discard the new coming transaction",
+//            (dbManager.getPendingTransactions().size() + PendingManager.getTmpTransactions()
+//                .size()));
+//        return builder.setResult(false).setCode(response_code.SERVER_BUSY).build();
+//      }
+//
+//      if (dbManager.isGeneratingBlock()) {
+//        logger.debug("Manager is generating block, discard the new coming transaction");
+//        return builder.setResult(false).setCode(response_code.SERVER_BUSY).build();
+//      }
 
       if (dbManager.getTransactionIdCache().getIfPresent(trx.getTransactionId()) != null) {
         logger.debug("This transaction has been processed, discard the transaction");
