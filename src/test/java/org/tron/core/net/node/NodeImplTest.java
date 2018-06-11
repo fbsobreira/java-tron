@@ -148,9 +148,9 @@ public class NodeImplTest {
     Block block = Block.newBuilder().setBlockHeader(blockHeader).build();
 
     BlockCapsule blockCapsule = new BlockCapsule(block);
+    blockCapsule.setMerkleRoot();
     blockCapsule.sign(
         ByteArray.fromHexString(Args.getInstance().getLocalWitnesses().getPrivateKey()));
-    blockCapsule.setMerkleRoot();
     BlockMessage blockMessage = new BlockMessage(blockCapsule);
     peer.getAdvObjWeRequested().put(new Item(blockMessage.getBlockId(), InventoryType.BLOCK), System.currentTimeMillis());
     nodeImpl.onMessage(peer, blockMessage);
