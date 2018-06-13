@@ -711,7 +711,7 @@ public class RpcApiService implements Service {
     }
 
     @Override
-    public void deployContract(org.tron.protos.Contract.ContractDeployContract request,
+    public void deployContract(org.tron.protos.Contract.SmartContract request,
                                io.grpc.stub.StreamObserver<org.tron.protos.Protocol.Transaction> responseObserver) {
       Transaction trx;
       try {
@@ -745,7 +745,7 @@ public class RpcApiService implements Service {
     }
 
     @Override
-    public void triggerContract(Contract.ContractTriggerContract request,
+    public void triggerContract(Contract.TriggerSmartContract request,
                                 StreamObserver<Transaction> responseObserver) {
       Transaction trx;
       try {
@@ -764,8 +764,8 @@ public class RpcApiService implements Service {
 
     @Override
     public void getContract(BytesMessage request,
-                            StreamObserver<Contract.ContractDeployContract> responseObserver) {
-      Contract.ContractDeployContract contract = wallet.getContract(request);
+                            StreamObserver<Contract.SmartContract> responseObserver) {
+      Contract.SmartContract contract = wallet.getContract(request);
       responseObserver.onNext(contract);
     }
 
