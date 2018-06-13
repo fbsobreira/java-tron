@@ -34,6 +34,10 @@ import org.joda.time.DateTime;
 import org.spongycastle.util.encoders.Hex;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.tron.common.crypto.ECKey;
+import org.tron.common.runtime.Runtime;
+import org.tron.common.runtime.vm.program.invoke.ProgramInvokeFactory;
+import org.tron.common.runtime.vm.program.invoke.ProgramInvokeFactoryImpl;
 import org.tron.common.overlay.discover.node.Node;
 import org.tron.common.utils.ByteArray;
 import org.tron.common.utils.DialogOptional;
@@ -75,6 +79,8 @@ import org.tron.core.exception.UnLinkedBlockException;
 import org.tron.core.exception.ValidateScheduleException;
 import org.tron.core.exception.ValidateSignatureException;
 import org.tron.core.witness.WitnessController;
+import org.tron.protos.Contract.TransferAssetContract;
+import org.tron.protos.Protocol;
 import org.tron.protos.Protocol.AccountType;
 import org.tron.protos.Protocol.Transaction;
 
@@ -107,6 +113,12 @@ public class Manager {
   private RecentBlockStore recentBlockStore;
   @Autowired
   private VotesStore votesStore;
+
+  private CodeStore codeStore;
+
+  private ContractStore contractStore;
+
+  private StorageStore storageStore;
 
   // for network
   @Autowired
@@ -163,6 +175,18 @@ public class Manager {
 
   public void setWitnessScheduleStore(final WitnessScheduleStore witnessScheduleStore) {
     this.witnessScheduleStore = witnessScheduleStore;
+  }
+
+  public StorageStore getStorageStore() {
+    return storageStore;
+  }
+
+  public CodeStore getCodeStore() {
+    return codeStore;
+  }
+
+  public ContractStore getContractStore() {
+    return contractStore;
   }
 
   public VotesStore getVotesStore() {
@@ -277,6 +301,10 @@ public class Manager {
       System.exit(1);
     }
     revokingStore.enable();
+
+    this.codeStore = CodeStore.create("code");
+    this.contractStore = ContractStore.create("contract");
+    this.storageStore  = StorageStore.create("storage");
 
     validateSignService = Executors
         .newFixedThreadPool(Args.getInstance().getValidateSignThreadNum());
@@ -501,7 +529,7 @@ public class Manager {
       }
 
       try (RevokingStore.Dialog tmpDialog = revokingStore.buildDialog()) {
-        processTransaction(trx);
+        processTransaction(trx, null);
         pendingTransactions.add(trx);
         tmpDialog.merge();
       } catch (RevokingStoreIllegalStateException e) {
@@ -858,7 +886,7 @@ public class Manager {
   /**
    * Process transaction.
    */
-  public boolean processTransaction(final TransactionCapsule trxCap)
+  public boolean processTransaction(final TransactionCapsule trxCap, Protocol.Block block)
       throws ValidateSignatureException, ContractValidateException, ContractExeException,
       AccountResourceInsufficientException, TransactionExpirationException, TooBigTransactionException,
       DupTransactionException, TaposException {
@@ -879,6 +907,26 @@ public class Manager {
       throw new ValidateSignatureException("trans sig validate failed");
     }
 
+    /**  VM execute  **/
+    //Runtime(Transaction tx, Block block, Manager dbManager,
+    //                   ProgramInvokeFactory programInvokeFactory)
+    if (block != null) {
+      Runtime runtime = new Runtime(trxCap.getInstance(), block, this, new ProgramInvokeFactoryImpl());
+      runtime.execute();
+      runtime.go();
+      if (runtime.getResult().getException() != null) {
+        throw new RuntimeException("Runtime exe failed!");
+      }
+    } else {
+      Runtime runtime = new Runtime(trxCap.getInstance(), this, new ProgramInvokeFactoryImpl());
+      runtime.execute();
+      runtime.go();
+      if (runtime.getResult().getException() != null) {
+        throw new RuntimeException("Runtime exe failed!");
+      }
+    }
+
+    /*
     final List<Actuator> actuatorList = ActuatorFactory.createActuator(trxCap, this);
     TransactionResultCapsule ret = new TransactionResultCapsule();
 
@@ -889,9 +937,11 @@ public class Manager {
       act.execute(ret);
       trxCap.setResult(ret);
     }
+    */
     transactionStore.put(trxCap.getTransactionId().getBytes(), trxCap);
     return true;
   }
+
 
   /**
    * Get the block id from the number.
@@ -943,7 +993,7 @@ public class Manager {
       }
       // apply transaction
       try (Dialog tmpDialog = revokingStore.buildDialog()) {
-        processTransaction(trx);
+        processTransaction(trx, null);
         tmpDialog.merge();
         // push into block
         blockCapsule.addTransaction(trx);
@@ -1046,11 +1096,12 @@ public class Manager {
       throw new ValidateScheduleException("validateWitnessSchedule error");
     }
 
+
     for (TransactionCapsule transactionCapsule : block.getTransactions()) {
       if (block.generatedByMyself) {
         transactionCapsule.setVerified(true);
       }
-      processTransaction(transactionCapsule);
+      processTransaction(transactionCapsule, block.getInstance());
     }
 
     boolean needMaint = needMaintenance(block.getTimeStamp());
