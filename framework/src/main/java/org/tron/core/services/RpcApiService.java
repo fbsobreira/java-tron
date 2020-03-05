@@ -102,6 +102,7 @@ import org.tron.core.exception.StoreException;
 import org.tron.core.exception.VMIllegalException;
 import org.tron.core.exception.ZksnarkException;
 import org.tron.core.metrics.MetricsApiService;
+import org.tron.core.services.filter.LiteFnQueryGrpcInterceptor;
 import org.tron.core.services.ratelimiter.RateLimiterInterceptor;
 import org.tron.core.utils.TransactionUtil;
 import org.tron.core.zen.address.DiversifierT;
@@ -179,6 +180,8 @@ public class RpcApiService implements Service {
   private NodeInfoService nodeInfoService;
   @Autowired
   private RateLimiterInterceptor rateLimiterInterceptor;
+  @Autowired
+  private LiteFnQueryGrpcInterceptor liteFnQueryGrpcInterceptor;
 
   @Autowired
   private MetricsApiService metricsApiService;
@@ -235,6 +238,9 @@ public class RpcApiService implements Service {
 
       // add a rate limiter interceptor
       serverBuilder.intercept(rateLimiterInterceptor);
+
+      // add lite fullnode query interceptor
+      serverBuilder.intercept(liteFnQueryGrpcInterceptor);
 
       apiServer = serverBuilder.build();
       rateLimiterInterceptor.init(apiServer);

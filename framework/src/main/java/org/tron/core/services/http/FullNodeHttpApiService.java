@@ -23,6 +23,8 @@ import org.tron.common.zksnark.LibrustzcashParam.InitZksnarkParams;
 import org.tron.core.config.args.Args;
 import org.tron.core.exception.ZksnarkException;
 import org.tron.core.services.filter.HttpInterceptor;
+import org.tron.core.services.filter.LiteFnQueryHttpFilter;
+
 
 @Component
 @Slf4j(topic = "API")
@@ -236,6 +238,9 @@ public class FullNodeHttpApiService implements Service {
   @Autowired
   private MetricsServlet metricsServlet;
 
+  @Autowired
+  private LiteFnQueryHttpFilter liteFnQueryHttpFilter;
+
   private static String getParamsFile(String fileName) {
     InputStream in = Thread.currentThread().getContextClassLoader()
         .getResourceAsStream("params" + File.separator + fileName);
@@ -444,6 +449,11 @@ public class FullNodeHttpApiService implements Service {
 
       context.addServlet(new ServletHolder(metricsServlet), "/monitor/getstatsinfo");
       context.addServlet(new ServletHolder(getNodeInfoServlet), "/monitor/getnodeinfo");
+
+      // filters the specified APIs
+      // when node is lite fullnode and openHistoryQueryWhenLiteFN is false
+      context.addFilter(new FilterHolder(liteFnQueryHttpFilter), "/*",
+              EnumSet.allOf(DispatcherType.class));
 
       int maxHttpConnectNumber = Args.getInstance().getMaxHttpConnectNumber();
       if (maxHttpConnectNumber > 0) {
