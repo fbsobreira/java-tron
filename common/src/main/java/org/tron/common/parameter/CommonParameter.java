@@ -394,6 +394,8 @@ public class CommonParameter {
   @Setter
   public long oldSolidityBlockNum = -1;
 
+  @Getter
+  @Setter
   public boolean openHistoryQueryWhenLiteFN = false;
 
   @Getter
